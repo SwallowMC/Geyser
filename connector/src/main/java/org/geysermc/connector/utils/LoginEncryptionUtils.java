@@ -47,6 +47,7 @@ import org.geysermc.connector.network.session.GeyserSession;
 import org.geysermc.connector.network.session.auth.AuthData;
 import org.geysermc.connector.network.session.auth.BedrockClientData;
 import org.geysermc.connector.network.session.cache.WindowCache;
+import org.geysermc.connector.common.AuthType;
 
 import javax.crypto.SecretKey;
 import java.io.IOException;
@@ -155,6 +156,7 @@ public class LoginEncryptionUtils {
         session.sendUpstreamPacketImmediately(packet);
     }
 
+    private static final int AUTH_OFFLINE_FORM_ID = 1333;
     private static final int AUTH_MSA_DETAILS_FORM_ID = 1334;
     private static final int AUTH_MSA_CODE_FORM_ID = 1335;
     private static final int AUTH_FORM_ID = 1336;
@@ -170,6 +172,9 @@ public class LoginEncryptionUtils {
             window.getButtons().add(new FormButton(LanguageUtils.getPlayerLocaleString("geyser.auth.login.form.notice.btn_login.mojang", userLanguage)));
         }
         window.getButtons().add(new FormButton(LanguageUtils.getPlayerLocaleString("geyser.auth.login.form.notice.btn_login.microsoft", userLanguage)));
+        if (session.getConnector().getAuthType() == AuthType.SMART){
+            window.getButtons().add(new FormButton("使用离线账户登录"));
+        }
         window.getButtons().add(new FormButton(LanguageUtils.getPlayerLocaleString("geyser.auth.login.form.notice.btn_disconnect", userLanguage)));
 
         session.sendForm(window, AUTH_FORM_ID);
@@ -184,6 +189,16 @@ public class LoginEncryptionUtils {
                 .build();
 
         session.sendForm(window, AUTH_DETAILS_FORM_ID);
+    }
+
+    public static void showOfflineLoginWindow(GeyserSession session) {
+        String userLanguage = session.getLocale();
+        CustomFormWindow window = new CustomFormBuilder(LanguageUtils.getPlayerLocaleString("geyser.auth.login.form.details.title", userLanguage))
+                .addComponent(new LabelComponent(LanguageUtils.getPlayerLocaleString("geyser.auth.login.form.details.desc", userLanguage)))
+                .addComponent(new InputComponent("用户名", "Steve", ""))
+                .build();
+
+        session.sendForm(window, AUTH_OFFLINE_FORM_ID);
     }
 
     /**
@@ -212,7 +227,7 @@ public class LoginEncryptionUtils {
         if (!windowCache.getWindows().containsKey(formId))
             return false;
 
-        if (formId == AUTH_MSA_DETAILS_FORM_ID || formId == AUTH_FORM_ID || formId == AUTH_DETAILS_FORM_ID || formId == AUTH_MSA_CODE_FORM_ID) {
+        if (formId == AUTH_MSA_DETAILS_FORM_ID || formId == AUTH_FORM_ID || formId == AUTH_DETAILS_FORM_ID || formId == AUTH_MSA_CODE_FORM_ID || formId == AUTH_OFFLINE_FORM_ID) {
             FormWindow window = windowCache.getWindows().remove(formId);
             window.setResponse(formData.trim());
 
@@ -232,10 +247,26 @@ public class LoginEncryptionUtils {
                     } else {
                         showLoginDetailsWindow(session);
                     }
+                } else if (formId == AUTH_OFFLINE_FORM_ID && window instanceof CustomFormWindow){
+                    CustomFormWindow customFormWindow = (CustomFormWindow) window;
+                    CustomFormResponse response = (CustomFormResponse) customFormWindow.getResponse();
+                    if (response != null) {
+                        String username = response.getInputResponses().get(1);
+                        session.authenticate(username);
+                        // Clear windows so authentication data isn't accidentally cached
+                        windowCache.getWindows().clear();
+                    } else {
+                        showOfflineLoginWindow(session);
+                    }
                 } else if (formId == AUTH_FORM_ID && window instanceof SimpleFormWindow) {
                     boolean isPasswordAuthentication = session.getConnector().getConfig().getRemote().isPasswordAuthentication();
                     int microsoftButton = isPasswordAuthentication ? 1 : 0;
                     int disconnectButton = isPasswordAuthentication ? 2 : 1;
+                    int offlineButton = isPasswordAuthentication ? 2 : 1;
+                    if (session.getConnector().getAuthType() == AuthType.SMART) {
+                        disconnectButton = disconnectButton + 1;
+                    }
+                        
                     SimpleFormResponse response = (SimpleFormResponse) window.getResponse();
                     if (response != null) {
                         if (isPasswordAuthentication && response.getClickedButtonId() == 0) {
@@ -249,6 +280,8 @@ public class LoginEncryptionUtils {
                                 // Just show the OAuth code
                                 session.authenticateWithMicrosoftCode();
                             }
+                        } else if (session.getConnector().getAuthType() == AuthType.SMART && response.getClickedButtonId() == offlineButton) {
+                            showOfflineLoginWindow(session);
                         } else if (response.getClickedButtonId() == disconnectButton) {
                             session.disconnect(LanguageUtils.getPlayerLocaleString("geyser.auth.login.form.disconnect", session.getLocale()));
                         }

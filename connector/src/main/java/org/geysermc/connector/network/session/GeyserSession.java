@@ -498,6 +498,9 @@ public class GeyserSession implements CommandSender {
     }
 
     public void login() {
+        if (connector.getAuthType() == AuthType.SMART){
+            return;
+        }
         if (connector.getAuthType() != AuthType.ONLINE) {
             if (connector.getAuthType() == AuthType.OFFLINE) {
                 connector.getLogger().info(LanguageUtils.getLocaleStringLog("geyser.auth.login.offline"));
