@@ -199,7 +199,7 @@ public class LoginEncryptionUtils {
         String userLanguage = session.getLocale();
         CustomFormWindow window = new CustomFormBuilder(LanguageUtils.getPlayerLocaleString("geyser.auth.login.form.details.title", userLanguage))
                 .addComponent(new LabelComponent(LanguageUtils.getPlayerLocaleString("geyser.auth.login.form.details.desc", userLanguage)))
-                .addComponent(new InputComponent("用户名", "Steve", ""))
+                .addComponent(new InputComponent("用户名", "Steve", session.getName()))
                 .build();
 
         session.sendForm(window, AUTH_OFFLINE_FORM_ID);
@@ -268,7 +268,7 @@ public class LoginEncryptionUtils {
                     int disconnectButton = isPasswordAuthentication ? 2 : 1;
                     int offlineButton = isPasswordAuthentication ? 2 : 1;
                     if (session.getConnector().getAuthType() == AuthType.SMART) {
-                        disconnectButton = disconnectButton + 1;
+                        disconnectButton++;
                     }
                         
                     SimpleFormResponse response = (SimpleFormResponse) window.getResponse();
