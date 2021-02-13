@@ -23,28 +23,26 @@
  * @link https://github.com/GeyserMC/Geyser
  */
 
-package org.geysermc.connector.network.translators.bedrock;
+package org.geysermc.connector.inventory;
 
-import com.nukkitx.protocol.bedrock.packet.ItemStackRequestPacket;
-import org.geysermc.connector.inventory.Inventory;
-import org.geysermc.connector.network.session.GeyserSession;
-import org.geysermc.connector.network.translators.PacketTranslator;
-import org.geysermc.connector.network.translators.Translator;
-import org.geysermc.connector.network.translators.inventory.InventoryTranslator;
+import lombok.Getter;
 
-/**
- * The packet sent for server-authoritative-style inventory transactions.
- */
-@Translator(packet = ItemStackRequestPacket.class)
-public class BedrockItemStackRequestTranslator extends PacketTranslator<ItemStackRequestPacket> {
+public class Generic3X3Container extends Container {
+    /**
+     * Whether we need to set the container type as {@link com.nukkitx.protocol.bedrock.data.inventory.ContainerType#DROPPER}
+     */
+    @Getter
+    private boolean isDropper = false;
+
+    public Generic3X3Container(String title, int id, int size, PlayerInventory playerInventory) {
+        super(title, id, size, playerInventory);
+    }
 
     @Override
-    public void translate(ItemStackRequestPacket packet, GeyserSession session) {
-        Inventory inventory = session.getOpenInventory();
-        if (inventory == null)
-            return;
-
-        InventoryTranslator translator = session.getInventoryTranslator();
-        session.addInventoryTask(() -> translator.translateRequests(session, inventory, packet.getRequests()));
+    public void setUsingRealBlock(boolean usingRealBlock, String javaBlockId) {
+        super.setUsingRealBlock(usingRealBlock, javaBlockId);
+        if (usingRealBlock) {
+            isDropper = javaBlockId.startsWith("minecraft:dropper");
+        }
     }
 }

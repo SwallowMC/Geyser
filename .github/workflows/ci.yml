@@ -1,4 +1,4 @@
-name: Build Geyser
+name: Build SwallowGeyser
 
 on: [push,pull_request]
 
@@ -28,28 +28,28 @@ jobs:
         if: success()
         with:
           name: Geyser Standalone
-          path: bootstrap/standalone/target/Geyser.jar
+          path: bootstrap/standalone/target/SwallowGeyser.jar
       - name: Archive artifacts (Geyser Spigot)
         uses: actions/upload-artifact@v2
         if: success()
         with:
           name: Geyser Spigot
-          path: bootstrap/spigot/target/Geyser-Spigot.jar
+          path: bootstrap/spigot/target/SwallowGeyser-Spigot.jar
       - name: Archive artifacts (Geyser BungeeCord)
         uses: actions/upload-artifact@v2
         if: success()
         with:
           name: Geyser BungeeCord
-          path: bootstrap/bungeecord/target/Geyser-BungeeCord.jar
+          path: bootstrap/bungeecord/target/SwallowGeyser-BungeeCord.jar
       - name: Archive artifacts (Geyser Sponge)
         uses: actions/upload-artifact@v2
         if: success()
         with:
           name: Geyser Sponge
-          path: bootstrap/sponge/target/Geyser-Sponge.jar
+          path: bootstrap/sponge/target/SwallowGeyser-Sponge.jar
       - name: Archive artifacts (Geyser Velocity)
         uses: actions/upload-artifact@v2
         if: success()
         with:
           name: Geyser Velocity
-          path: bootstrap/velocity/target/Geyser-Velocity.jar
+          path: bootstrap/velocity/target/SwallowGeyser-Velocity.jar

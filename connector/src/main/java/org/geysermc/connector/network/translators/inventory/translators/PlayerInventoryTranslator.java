@@ -366,6 +366,7 @@ public class PlayerInventoryTranslator extends InventoryTranslator {
                     break;
                 }
                 default:
+                    session.getConnector().getLogger().error("Unknown crafting state induced by " + session.getName());
                     return rejectRequest(request);
             }
         }
@@ -404,6 +405,17 @@ public class PlayerInventoryTranslator extends InventoryTranslator {
                         return rejectRequest(request);
                     }
                     craftState = CraftState.DEPRECATED;
+                    break;
+                }
+                case DESTROY: {
+                    DestroyStackRequestActionData destroyAction = (DestroyStackRequestActionData) action;
+                    if (craftState != CraftState.DEPRECATED) {
+                        return rejectRequest(request);
+                    }
+
+                    int sourceSlot = bedrockSlotToJava(destroyAction.getSource());
+                    inventory.setItem(sourceSlot, GeyserItemStack.EMPTY, session); //assume all creative destroy requests will empty the slot
+                    affectedSlots.add(sourceSlot);
                     break;
                 }
                 case TAKE:
