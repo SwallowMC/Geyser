@@ -132,6 +132,8 @@ public class GeyserSession implements CommandSender {
     private ChunkCache chunkCache;
     private EntityCache entityCache;
     private EntityEffectCache effectCache;
+    //private InventoryCache inventoryCache;
+    private final PistonCache pistonCache;
     private WorldCache worldCache;
     private WindowCache windowCache;
     private final Int2ObjectMap<TeleportCache> teleportMap = new Int2ObjectOpenHashMap<>();
@@ -427,6 +429,8 @@ public class GeyserSession implements CommandSender {
         this.chunkCache = new ChunkCache(this);
         this.entityCache = new EntityCache(this);
         this.effectCache = new EntityEffectCache();
+        //this.inventoryCache = new InventoryCache(this);
+        this.pistonCache = new PistonCache(this);
         this.worldCache = new WorldCache(this);
         this.windowCache = new WindowCache(this);
 
@@ -789,6 +793,7 @@ public class GeyserSession implements CommandSender {
      * Called every 50 milliseconds - one Minecraft tick.
      */
     public void tick() {
+        pistonCache.tick();
         // Check to see if the player's position needs updating - a position update should be sent once every 3 seconds
         if (spawned && (System.currentTimeMillis() - lastMovementTimestamp) > 3000) {
             // Recalculate in case something else changed position
@@ -1056,7 +1061,7 @@ public class GeyserSession implements CommandSender {
 
     /**
      * Queue a packet to be sent to player.
-     * 
+     *
      * @param packet the bedrock packet from the NukkitX protocol lib
      */
     public void sendUpstreamPacket(BedrockPacket packet) {
