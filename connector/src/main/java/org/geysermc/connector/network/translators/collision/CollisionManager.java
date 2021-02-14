@@ -160,6 +160,7 @@ public class CollisionManager {
             if (!onGround) {
                 // Trim the position to prevent rounding errors that make Java think we are clipping into a block
                 position = Vector3d.from(position.getX(), Double.parseDouble(DECIMAL_FORMAT.format(position.getY())), position.getZ());
+            }
 //
 //            position = playerBoundingBox.getBottomCenter();
 
@@ -175,7 +176,6 @@ public class CollisionManager {
             if (onGround) javaY = Math.ceil(javaY * 2) / 2;
             position = position.up(javaY - position.getY());
         }
-
         return position;
     }
 
