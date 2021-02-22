@@ -40,6 +40,7 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenCustomHashMap;
 import lombok.Getter;
+import lombok.ToString;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.geysermc.connector.GeyserConnector;
 import org.geysermc.connector.entity.type.EntityType;
@@ -234,10 +235,6 @@ public class JavaDeclareCommandsTranslator extends PacketTranslator<ServerDeclar
             case RESOURCE_LOCATION:
             case FUNCTION:
                 return CommandParamType.FILE_PATH;
-
-            //case INT_RANGE:
-            //    return CommandParamType.INT_RANGE; - no longer registered
-
             case BOOL:
                 return ENUM_BOOLEAN;
 
@@ -262,30 +259,13 @@ public class JavaDeclareCommandsTranslator extends PacketTranslator<ServerDeclar
             case SCOREBOARD_SLOT:
                 return VALID_SCOREBOARD_SLOTS;
 
-            case STRING:
-            case VEC2:
-            case BLOCK_PREDICATE:
-            case ITEM_PREDICATE:
-            case COMPONENT:
-            case OBJECTIVE:
-            case OBJECTIVE_CRITERIA:
-            case PARTICLE:
-            case SCORE_HOLDER:
-            case SWIZZLE:
-            case TEAM:
-            case ITEM_SLOT:
-            case MOB_EFFECT:
-            case ENTITY_ANCHOR:
-            case RANGE:
-            case FLOAT_RANGE:
-            case DIMENSION:
-            case TIME:
             default:
                 return CommandParamType.STRING;
         }
     }
 
     @Getter
+    @ToString
     private static class ParamInfo {
         private final CommandNode paramNode;
         private final CommandParamData paramData;
@@ -329,6 +309,7 @@ public class JavaDeclareCommandsTranslator extends PacketTranslator<ServerDeclar
                             break;
                         }
                     }
+
                     if (!foundCompatible) {
                         // Create a new subcommand with this exact type
                         CommandEnumData enumData = new CommandEnumData(paramNode.getName(), new String[]{paramNode.getName()}, false);
