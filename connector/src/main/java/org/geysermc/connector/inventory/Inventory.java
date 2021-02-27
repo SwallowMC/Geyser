@@ -36,7 +36,7 @@ import java.util.Arrays;
 public class Inventory {
 
     @Getter
-    protected int id;
+    protected final int id;
 
     @Getter
     protected final int size;
@@ -60,6 +60,10 @@ public class Inventory {
 
     @Getter
     protected short transactionId = 0;
+
+    @Getter
+    @Setter
+    private boolean pending = false;
 
     protected Inventory(int id, int size) {
         this("Inventory", id, size);
@@ -95,5 +99,18 @@ public class Inventory {
 
     public short getNextTransactionId() {
         return ++transactionId;
+    }
+
+    @Override
+    public String toString() {
+        return "Inventory{" +
+                "id=" + id +
+                ", size=" + size +
+                ", title='" + title + '\'' +
+                ", items=" + Arrays.toString(items) +
+                ", holderPosition=" + holderPosition +
+                ", holderId=" + holderId +
+                ", transactionId=" + transactionId +
+                '}';
     }
 }

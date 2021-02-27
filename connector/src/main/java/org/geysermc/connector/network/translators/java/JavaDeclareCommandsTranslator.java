@@ -235,6 +235,7 @@ public class JavaDeclareCommandsTranslator extends PacketTranslator<ServerDeclar
             case RESOURCE_LOCATION:
             case FUNCTION:
                 return CommandParamType.FILE_PATH;
+
             case BOOL:
                 return ENUM_BOOLEAN;
 
@@ -392,6 +393,7 @@ public class JavaDeclareCommandsTranslator extends PacketTranslator<ServerDeclar
                         break;
                     }
                 }
+
                 if (!hasSimilarity) {
                     return false;
                 }
@@ -427,15 +429,6 @@ public class JavaDeclareCommandsTranslator extends PacketTranslator<ServerDeclar
             }
 
             return treeParamData;
-        }
-
-        @Override
-        public String toString() {
-            return "ParamInfo{" +
-                    "paramNode=" + paramNode +
-                    ", paramData=" + paramData +
-                    ", children=" + children +
-                    '}';
         }
     }
 }

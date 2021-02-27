@@ -36,8 +36,8 @@ import java.util.Map;
 
 public interface GeyserConfiguration {
 
-    // Modify this when you update the config
-    int CURRENT_CONFIG_VERSION = 5;
+    // Modify this when you introduce breaking changes into the config
+    int CURRENT_CONFIG_VERSION = 4;
 
     IBedrockConfiguration getBedrock();
 
@@ -89,8 +89,6 @@ public interface GeyserConfiguration {
 
     boolean isXboxAchievementsEnabled();
 
-    boolean isXboxAuthEnabled();
-    
     int getCacheImages();
 
     boolean isAllowCustomSkulls();

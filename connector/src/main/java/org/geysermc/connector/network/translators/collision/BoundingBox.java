@@ -25,12 +25,11 @@
 
 package org.geysermc.connector.network.translators.collision;
 
-import com.nukkitx.math.vector.Vector3d;
 import lombok.*;
 
 @Data
 @AllArgsConstructor
-public class BoundingBox implements Cloneable {
+public class BoundingBox {
     private double middleX;
     private double middleY;
     private double middleZ;
@@ -45,59 +44,9 @@ public class BoundingBox implements Cloneable {
         middleZ += z;
     }
 
-    public void extend(double x, double y, double z) {
-        middleX += x / 2;
-        middleY += y / 2;
-        middleZ += z / 2;
-
-        sizeX += Math.abs(x);
-        sizeY += Math.abs(y);
-        sizeZ += Math.abs(z);
-    }
-
-    public void extend(Vector3d extend) {
-        extend(extend.getX(), extend.getY(), extend.getZ());
-    }
-
-    public boolean checkIntersection(double offsetX, double offsetY, double offsetZ, BoundingBox otherBox) {
+    public boolean checkIntersection(int offsetX, int offsetY, int offsetZ, BoundingBox otherBox) {
         return (Math.abs((middleX + offsetX) - otherBox.getMiddleX()) * 2 < (sizeX + otherBox.getSizeX())) &&
                 (Math.abs((middleY + offsetY) - otherBox.getMiddleY()) * 2 < (sizeY + otherBox.getSizeY())) &&
                 (Math.abs((middleZ + offsetZ) - otherBox.getMiddleZ()) * 2 < (sizeZ + otherBox.getSizeZ()));
-    }
-
-    public boolean checkIntersection(Vector3d offset, BoundingBox otherBox) {
-        return checkIntersection(offset.getX(), offset.getY(), offset.getZ(), otherBox);
-    }
-
-    public Vector3d getMin() {
-        double x = middleX - sizeX / 2;
-        double y = middleY - sizeY / 2;
-        double z = middleZ - sizeZ / 2;
-        return Vector3d.from(x, y, z);
-    }
-
-    public Vector3d getMax() {
-        double x = middleX + sizeX / 2;
-        double y = middleY + sizeY / 2;
-        double z = middleZ + sizeZ / 2;
-        return Vector3d.from(x, y, z);
-    }
-
-    public Vector3d getBottomCenter() {
-        return Vector3d.from(middleX, middleY - sizeY / 2, middleZ);
-    }
-
-    @SneakyThrows(CloneNotSupportedException.class)
-    @Override
-    public BoundingBox clone() {
-        BoundingBox clone = (BoundingBox) super.clone();
-        clone.middleX = middleX;
-        clone.middleY = middleY;
-        clone.middleZ = middleZ;
-
-        clone.sizeX = sizeX;
-        clone.sizeY = sizeY;
-        clone.sizeZ = sizeZ;
-        return clone;
     }
 }

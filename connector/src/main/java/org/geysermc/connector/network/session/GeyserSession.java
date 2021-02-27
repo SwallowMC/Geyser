@@ -74,14 +74,16 @@ import lombok.Setter;
 import org.geysermc.common.window.CustomFormWindow;
 import org.geysermc.common.window.FormWindow;
 import org.geysermc.connector.GeyserConnector;
+import org.geysermc.connector.common.ChatColor;
+import org.geysermc.connector.entity.Tickable;
 import org.geysermc.connector.command.CommandSender;
 import org.geysermc.connector.common.AuthType;
 import org.geysermc.connector.entity.Entity;
 import org.geysermc.connector.entity.attribute.Attribute;
 import org.geysermc.connector.entity.attribute.AttributeType;
-import org.geysermc.connector.entity.Tickable;
 import org.geysermc.connector.entity.player.SessionPlayerEntity;
 import org.geysermc.connector.entity.player.SkullPlayerEntity;
+import org.geysermc.connector.entity.type.EntityType;
 import org.geysermc.connector.inventory.Inventory;
 import org.geysermc.connector.inventory.PlayerInventory;
 import org.geysermc.connector.network.remote.RemoteServer;
@@ -133,15 +135,18 @@ public class GeyserSession implements CommandSender {
     private ChunkCache chunkCache;
     private EntityCache entityCache;
     private EntityEffectCache effectCache;
-    //private InventoryCache inventoryCache;
-    private final PistonCache pistonCache;
     private WorldCache worldCache;
     private WindowCache windowCache;
     private final Int2ObjectMap<TeleportCache> teleportMap = new Int2ObjectOpenHashMap<>();
 
+    @Setter
+    private WorldBorder worldBorder;
+
     private final PlayerInventory playerInventory;
     @Setter
     private Inventory openInventory;
+    @Setter
+    private boolean closingInventory;
 
     @Setter
     private InventoryTranslator inventoryTranslator = InventoryTranslator.PLAYER_INVENTORY_TRANSLATOR;
@@ -150,7 +155,7 @@ public class GeyserSession implements CommandSender {
      * Use {@link #getNextItemNetId()} instead for consistency
      */
     @Getter(AccessLevel.NONE)
-    private final AtomicInteger itemNetId = new AtomicInteger(1);
+    private final AtomicInteger itemNetId = new AtomicInteger(2);
 
     @Getter(AccessLevel.NONE)
     private final Object inventoryLock = new Object();
@@ -430,14 +435,14 @@ public class GeyserSession implements CommandSender {
         this.chunkCache = new ChunkCache(this);
         this.entityCache = new EntityCache(this);
         this.effectCache = new EntityEffectCache();
-        //this.inventoryCache = new InventoryCache(this);
-        this.pistonCache = new PistonCache(this);
         this.worldCache = new WorldCache(this);
         this.windowCache = new WindowCache(this);
 
         this.collisionManager = new CollisionManager(this);
 
         this.playerEntity = new SessionPlayerEntity(this);
+
+        collisionManager.updatePlayerBoundingBox(this.playerEntity.getPosition());
         this.worldCache = new WorldCache(this);
         this.windowCache = new WindowCache(this);
 
@@ -447,6 +452,7 @@ public class GeyserSession implements CommandSender {
         this.craftingRecipes = new Int2ObjectOpenHashMap<>();
         this.unlockedRecipes = new ObjectOpenHashSet<>();
         this.lastRecipeNetId = new AtomicInteger(1);
+
         this.spawned = false;
         this.loggedIn = false;
 
@@ -512,7 +518,7 @@ public class GeyserSession implements CommandSender {
     }
 
     public void login() {
-        if (connector.getAuthType() == AuthType.SMART){
+    	if (connector.getAuthType() == AuthType.SMART){
             return;
         }
         if (connector.getAuthType() != AuthType.ONLINE) {
@@ -784,6 +790,8 @@ public class GeyserSession implements CommandSender {
         this.worldCache = null;
         this.windowCache = null;
 
+        this.worldBorder = null;
+
         closed = true;
     }
 
@@ -795,7 +803,6 @@ public class GeyserSession implements CommandSender {
      * Called every 50 milliseconds - one Minecraft tick.
      */
     public void tick() {
-        pistonCache.tick();
         // Check to see if the player's position needs updating - a position update should be sent once every 3 seconds
         if (spawned && (System.currentTimeMillis() - lastMovementTimestamp) > 3000) {
             // Recalculate in case something else changed position
@@ -807,6 +814,25 @@ public class GeyserSession implements CommandSender {
                 sendDownstreamPacket(packet);
             }
             lastMovementTimestamp = System.currentTimeMillis();
+        }
+
+        if (worldBorder != null) {
+            if (worldBorder.isResizing()) {
+                worldBorder.resize();
+            }
+
+            if (!worldBorder.isWithinWarningBoundaries()) {
+                // Show particles representing where the world border is
+                worldBorder.drawWall();
+                // Send message explaining what is going on
+                SetTitlePacket setTitlePacket = new SetTitlePacket();
+                setTitlePacket.setType(SetTitlePacket.Type.ACTIONBAR);
+                setTitlePacket.setText(ChatColor.BOLD + ChatColor.RED + LanguageUtils.getPlayerLocaleString("geyser.network.translator.world_border.too_close", getLocale()));
+                setTitlePacket.setStayTime(1);
+                setTitlePacket.setFadeInTime(1);
+                setTitlePacket.setFadeOutTime(1);
+                sendUpstreamPacket(setTitlePacket);
+            }
         }
 
         for (Tickable entity : entityCache.getTickableEntities()) {
@@ -944,7 +970,7 @@ public class GeyserSession implements CommandSender {
         startGamePacket.setMultiplayerCorrelationId("");
         startGamePacket.setItemEntries(ItemRegistry.ITEMS);
         startGamePacket.setVanillaVersion("*");
-        //startGamePacket.setInventoriesServerAuthoritative(true);
+        startGamePacket.setInventoriesServerAuthoritative(true);
         startGamePacket.setAuthoritativeMovementMode(AuthoritativeMovementMode.CLIENT); // can be removed once 1.16.200 support is dropped
 
         SyncedPlayerMovementSettings settings = new SyncedPlayerMovementSettings();
@@ -952,7 +978,7 @@ public class GeyserSession implements CommandSender {
         settings.setRewindHistorySize(0);
         settings.setServerAuthoritativeBlockBreaking(false);
         startGamePacket.setPlayerMovementSettings(settings);
-
+        
         upstream.sendPacket(startGamePacket);
     }
 
@@ -1069,8 +1095,43 @@ public class GeyserSession implements CommandSender {
     }
 
     /**
-     * Queue a packet to be sent to player.
+     * Checks to see if the player is within world border boundaries, but does NOT adjust position if they are outside it.
      *
+     * @return if this player is within world border boundaries. Will return true if no world border was defined for us.
+     */
+    public boolean isWithinWorldBorderBoundaries() {
+        if (worldBorder == null) {
+            return true;
+        }
+
+        return worldBorder.isInsideBorderBoundaries();
+    }
+
+    /**
+     * Confirms that the player is within world border boundaries when they move.
+     * Otherwise, if {@code adjustPosition} is true, this function will push the player back.
+     *
+     * @return if this player was indeed against the world border. Will return false if no world border was defined for us.
+     */
+    public boolean isPassingWorldBorderBoundaries(Vector3f newPosition, boolean adjustPosition) {
+        if (worldBorder == null) {
+            return false;
+        }
+
+        boolean isInWorldBorder = worldBorder.isPassingIntoBorderBoundaries(newPosition);
+        if (isInWorldBorder && adjustPosition) {
+            // Move the player back, but allow gravity to take place
+            // Teleported = true makes going back better, but disconnects the player from their mounted entity
+            playerEntity.moveAbsolute(this,
+                    Vector3f.from(playerEntity.getPosition().getX(), (newPosition.getY() - EntityType.PLAYER.getOffset()), playerEntity.getPosition().getZ()),
+                    playerEntity.getRotation(), playerEntity.isOnGround(), ridingVehicleEntity == null);
+        }
+        return isInWorldBorder;
+    }
+
+    /**
+     * Queue a packet to be sent to player.
+     * 
      * @param packet the bedrock packet from the NukkitX protocol lib
      */
     public void sendUpstreamPacket(BedrockPacket packet) {

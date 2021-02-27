@@ -106,11 +106,7 @@ public class LoginEncryptionUtils {
             connector.getLogger().debug(String.format("Is player data valid? %s", validChain));
 
             if (!validChain && !session.getConnector().getConfig().isEnableProxyConnections()) {
-                if (session.getConnector().getConfig().isXboxAuthEnabled()){
-                	session.disconnect(LanguageUtils.getLocaleStringLog("geyser.network.remote.invalid_xbox_account"));
-                } else {
-                	connector.getLogger().warning(session.getName()+" hasn't been passed Xbox-authentication.");//TODO:Add translation support
-                }
+                session.disconnect(LanguageUtils.getLocaleStringLog("geyser.network.remote.invalid_xbox_account"));
                 return;
             }
             JWSObject jwt = JWSObject.parse(certChainData.get(certChainData.size() - 1).asText());
@@ -175,10 +171,10 @@ public class LoginEncryptionUtils {
         if (session.getConnector().getConfig().getRemote().isPasswordAuthentication()) {
             window.getButtons().add(new FormButton(LanguageUtils.getPlayerLocaleString("geyser.auth.login.form.notice.btn_login.mojang", userLanguage)));
         }
-        window.getButtons().add(new FormButton(LanguageUtils.getPlayerLocaleString("geyser.auth.login.form.notice.btn_login.microsoft", userLanguage)));
         if (session.getConnector().getAuthType() == AuthType.SMART){
             window.getButtons().add(new FormButton("使用离线账户登录"));
         }
+        window.getButtons().add(new FormButton(LanguageUtils.getPlayerLocaleString("geyser.auth.login.form.notice.btn_login.microsoft", userLanguage)));
         window.getButtons().add(new FormButton(LanguageUtils.getPlayerLocaleString("geyser.auth.login.form.notice.btn_disconnect", userLanguage)));
 
         session.sendForm(window, AUTH_FORM_ID);
@@ -194,7 +190,7 @@ public class LoginEncryptionUtils {
 
         session.sendForm(window, AUTH_DETAILS_FORM_ID);
     }
-
+    
     public static void showOfflineLoginWindow(GeyserSession session) {
         String userLanguage = session.getLocale();
         CustomFormWindow window = new CustomFormBuilder(LanguageUtils.getPlayerLocaleString("geyser.auth.login.form.details.title", userLanguage))

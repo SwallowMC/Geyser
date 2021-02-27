@@ -44,7 +44,6 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class BlockTranslator {
-    public static final NbtList<NbtMap> BLOCKS;
     /**
      * The Java block runtime ID of air
      */
@@ -73,8 +72,6 @@ public class BlockTranslator {
     public static final Int2DoubleMap JAVA_RUNTIME_ID_TO_HARDNESS = new Int2DoubleOpenHashMap();
     public static final Int2BooleanMap JAVA_RUNTIME_ID_TO_CAN_HARVEST_WITH_HAND = new Int2BooleanOpenHashMap();
     public static final Int2ObjectMap<String> JAVA_RUNTIME_ID_TO_TOOL_TYPE = new Int2ObjectOpenHashMap<>();
-    public static final Int2ObjectMap<String> JAVA_RUNTIME_ID_TO_PISTON_BEHAVIOR = new Int2ObjectOpenHashMap<>();
-    public static final Int2BooleanMap JAVA_RUNTIME_ID_TO_HAS_BLOCK_ENTITY = new Int2BooleanOpenHashMap();
 
     // The index of the collision data in collision.json
     public static final Int2IntMap JAVA_RUNTIME_ID_TO_COLLISION_INDEX = new Int2IntOpenHashMap();
@@ -92,11 +89,6 @@ public class BlockTranslator {
     public static final int BEDROCK_RUNTIME_COMMAND_BLOCK_ID;
 
     /**
-     * Runtime moving Block ID, used for blocks moved by pistons
-     */
-    public static final int BEDROCK_RUNTIME_MOVING_BLOCK_ID;
-
-    /**
      * A list of all Java runtime wool IDs, for use with block breaking math and shears
      */
     public static final IntSet JAVA_RUNTIME_WOOL_IDS = new IntOpenHashSet();
@@ -106,9 +98,6 @@ public class BlockTranslator {
     public static final int JAVA_RUNTIME_FURNACE_LIT_ID;
 
     public static final int JAVA_RUNTIME_SPAWNER_ID;
-
-    public static final int JAVA_RUNTIME_SLIME_BLOCK_ID;
-    public static final int JAVA_RUNTIME_HONEY_BLOCK_ID;
 
     private static final int BLOCK_STATE_VERSION = 17825808;
 
@@ -120,7 +109,6 @@ public class BlockTranslator {
         try (NBTInputStream nbtInputStream = new NBTInputStream(new DataInputStream(stream))) {
             NbtMap blockPalette = (NbtMap) nbtInputStream.readTag();
             blocksTag = (NbtList<NbtMap>) blockPalette.getList("blocks", NbtType.COMPOUND);
-            BLOCKS = blocksTag;
         } catch (Exception e) {
             throw new AssertionError("Unable to get blocks from runtime block states", e);
         }
@@ -158,8 +146,6 @@ public class BlockTranslator {
         int furnaceRuntimeId = -1;
         int furnaceLitRuntimeId = -1;
         int spawnerRuntimeId = -1;
-        int honeyBlockRuntimeId = -1;
-        int slimeBlockRuntimeId = -1;
         int uniqueJavaId = -1;
         Iterator<Map.Entry<String, JsonNode>> blocksIterator = blocks.fields();
         while (blocksIterator.hasNext()) {
@@ -192,21 +178,6 @@ public class BlockTranslator {
             JsonNode collisionIndexNode = entry.getValue().get("collision_index");
             if (hardnessNode != null) {
                 JAVA_RUNTIME_ID_TO_COLLISION_INDEX.put(javaRuntimeId, collisionIndexNode.intValue());
-            }
-
-            if (javaId.contains("obsidian") || javaId.contains("respawn_anchor")) {
-                // Override obsidian, crying_obsidian, and respawn_anchor to block piston movement
-                JAVA_RUNTIME_ID_TO_PISTON_BEHAVIOR.put(javaRuntimeId, "block");
-            } else {
-                JsonNode pistonBehaviorNode = entry.getValue().get("piston_behavior");
-                if (pistonBehaviorNode != null) {
-                    JAVA_RUNTIME_ID_TO_PISTON_BEHAVIOR.put(javaRuntimeId, pistonBehaviorNode.textValue());
-                }
-            }
-
-            JsonNode hasBlockEntityNode = entry.getValue().get("has_block_entity");
-            if (hasBlockEntityNode != null) {
-                JAVA_RUNTIME_ID_TO_HAS_BLOCK_ENTITY.put(javaRuntimeId, hasBlockEntityNode.booleanValue());
             }
 
             JsonNode pickItemNode = entry.getValue().get("pick_item");
@@ -274,12 +245,6 @@ public class BlockTranslator {
             } else if (javaId.startsWith("minecraft:spawner")) {
                 spawnerRuntimeId = javaRuntimeId;
             }
-
-            if (javaId.equals("minecraft:honey_block")) {
-                honeyBlockRuntimeId = javaRuntimeId;
-            } else if (javaId.equals("minecraft:slime_block")) {
-                slimeBlockRuntimeId = javaRuntimeId;
-            }
         }
 
         if (cobwebRuntimeId == -1) {
@@ -322,30 +287,12 @@ public class BlockTranslator {
         }
         BEDROCK_AIR_ID = airRuntimeId;
 
-        if (honeyBlockRuntimeId == -1) {
-            throw new AssertionError("Unable to find honey block in palette");
-        }
-        JAVA_RUNTIME_HONEY_BLOCK_ID = honeyBlockRuntimeId;
-
-        if (slimeBlockRuntimeId == -1) {
-            throw new AssertionError("Unable to find slime block in palette");
-        }
-        JAVA_RUNTIME_SLIME_BLOCK_ID = slimeBlockRuntimeId;
-
-        // Loop around again to find all item frame runtime IDs and movingBlock's runtime ID
-        int movingBlockId = -1;
+        // Loop around again to find all item frame runtime IDs
         for (Object2IntMap.Entry<NbtMap> entry : blockStateOrderedMap.object2IntEntrySet()) {
             if (entry.getKey().getString("name").equals("minecraft:frame")) {
                 ITEM_FRAMES.put(entry.getKey(), entry.getIntValue());
-            } else if (entry.getKey().getString("name").equals("minecraft:movingBlock")) {
-                movingBlockId = entry.getIntValue();
             }
         }
-
-        if (movingBlockId == -1) {
-            throw new AssertionError("Unable to find moving block in palette");
-        }
-        BEDROCK_RUNTIME_MOVING_BLOCK_ID = movingBlockId;
     }
 
     private BlockTranslator() {

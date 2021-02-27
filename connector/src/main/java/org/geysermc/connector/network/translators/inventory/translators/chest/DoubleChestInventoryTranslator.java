@@ -31,6 +31,7 @@ import com.nukkitx.nbt.NbtMap;
 import com.nukkitx.nbt.NbtMapBuilder;
 import com.nukkitx.protocol.bedrock.data.inventory.ContainerType;
 import com.nukkitx.protocol.bedrock.packet.BlockEntityDataPacket;
+import com.nukkitx.protocol.bedrock.packet.ContainerClosePacket;
 import com.nukkitx.protocol.bedrock.packet.ContainerOpenPacket;
 import com.nukkitx.protocol.bedrock.packet.UpdateBlockPacket;
 import org.geysermc.connector.inventory.Container;
@@ -42,12 +43,11 @@ import org.geysermc.connector.network.translators.world.block.DoubleChestValue;
 import org.geysermc.connector.network.translators.world.block.entity.DoubleChestBlockEntityTranslator;
 
 public class DoubleChestInventoryTranslator extends ChestInventoryTranslator {
-    private final int defaultBedrockBlockId;
+    private final int defaultJavaBlockState;
 
     public DoubleChestInventoryTranslator(int size) {
         super(size, 54);
-        int javaBlockState = BlockTranslator.getJavaBlockState("minecraft:chest[facing=north,type=single,waterlogged=false]");
-        this.defaultBedrockBlockId = BlockTranslator.getBedrockBlockId(javaBlockState);
+        this.defaultJavaBlockState = BlockTranslator.getJavaBlockState("minecraft:chest[facing=north,type=single,waterlogged=false]");
     }
 
     @Override
@@ -84,10 +84,12 @@ public class DoubleChestInventoryTranslator extends ChestInventoryTranslator {
         Vector3i position = session.getPlayerEntity().getPosition().toInt().add(Vector3i.UP);
         Vector3i pairPosition = position.add(Vector3i.UNIT_X);
 
+        int bedrockBlockId = BlockTranslator.getBedrockBlockId(defaultJavaBlockState);
+
         UpdateBlockPacket blockPacket = new UpdateBlockPacket();
         blockPacket.setDataLayer(0);
         blockPacket.setBlockPosition(position);
-        blockPacket.setRuntimeId(defaultBedrockBlockId);
+        blockPacket.setRuntimeId(bedrockBlockId);
         blockPacket.getFlags().addAll(UpdateBlockPacket.FLAG_ALL_PRIORITY);
         session.sendUpstreamPacket(blockPacket);
 
@@ -107,7 +109,7 @@ public class DoubleChestInventoryTranslator extends ChestInventoryTranslator {
         blockPacket = new UpdateBlockPacket();
         blockPacket.setDataLayer(0);
         blockPacket.setBlockPosition(pairPosition);
-        blockPacket.setRuntimeId(defaultBedrockBlockId);
+        blockPacket.setRuntimeId(bedrockBlockId);
         blockPacket.getFlags().addAll(UpdateBlockPacket.FLAG_ALL_PRIORITY);
         session.sendUpstreamPacket(blockPacket);
 
@@ -141,6 +143,11 @@ public class DoubleChestInventoryTranslator extends ChestInventoryTranslator {
     public void closeInventory(GeyserSession session, Inventory inventory) {
         if (((Container) inventory).isUsingRealBlock()) {
             // No need to reset a block since we didn't change any blocks
+            // But send a container close packet because we aren't destroying the original.
+            ContainerClosePacket packet = new ContainerClosePacket();
+            packet.setId((byte) inventory.getId());
+            packet.setUnknownBool0(true); //TODO needs to be changed in Protocol to "server-side" or something
+            session.sendUpstreamPacket(packet);
             return;
         }
 

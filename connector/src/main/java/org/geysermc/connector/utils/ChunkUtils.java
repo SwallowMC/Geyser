@@ -376,29 +376,25 @@ public class ChunkUtils {
             skull.despawnEntity(session, position);
         }
 
-        // Prevent moving_piston from being placed
-        // It's used for extending piston heads, but it isn't needed on Bedrock and causes pistons to flicker
-        if (!BlockStateValues.isMovingPiston(blockState)) {
-            int blockId = BlockTranslator.getBedrockBlockId(blockState);
+        int blockId = BlockTranslator.getBedrockBlockId(blockState);
 
-            UpdateBlockPacket updateBlockPacket = new UpdateBlockPacket();
-            updateBlockPacket.setDataLayer(0);
-            updateBlockPacket.setBlockPosition(position);
-            updateBlockPacket.setRuntimeId(blockId);
-            updateBlockPacket.getFlags().add(UpdateBlockPacket.Flag.NEIGHBORS);
-            updateBlockPacket.getFlags().add(UpdateBlockPacket.Flag.NETWORK);
-            session.sendUpstreamPacket(updateBlockPacket);
+        UpdateBlockPacket updateBlockPacket = new UpdateBlockPacket();
+        updateBlockPacket.setDataLayer(0);
+        updateBlockPacket.setBlockPosition(position);
+        updateBlockPacket.setRuntimeId(blockId);
+        updateBlockPacket.getFlags().add(UpdateBlockPacket.Flag.NEIGHBORS);
+        updateBlockPacket.getFlags().add(UpdateBlockPacket.Flag.NETWORK);
+        session.sendUpstreamPacket(updateBlockPacket);
 
-            UpdateBlockPacket waterPacket = new UpdateBlockPacket();
-            waterPacket.setDataLayer(1);
-            waterPacket.setBlockPosition(position);
-            if (BlockTranslator.isWaterlogged(blockState)) {
-                waterPacket.setRuntimeId(BEDROCK_WATER_ID);
-            } else {
-                waterPacket.setRuntimeId(BEDROCK_AIR_ID);
-            }
-            session.sendUpstreamPacket(waterPacket);
+        UpdateBlockPacket waterPacket = new UpdateBlockPacket();
+        waterPacket.setDataLayer(1);
+        waterPacket.setBlockPosition(position);
+        if (BlockTranslator.isWaterlogged(blockState)) {
+            waterPacket.setRuntimeId(BEDROCK_WATER_ID);
+        } else {
+            waterPacket.setRuntimeId(BEDROCK_AIR_ID);
         }
+        session.sendUpstreamPacket(waterPacket);
 
         if (BlockStateValues.getLecternBookStates().containsKey(blockState)) {
             boolean lecternCachedHasBook = session.getLecternCache().contains(position);

@@ -39,7 +39,7 @@ remote:
   # The port of the remote (Java Edition) server
   # For plugin versions, if address has been set to "auto", the port will also follow the server's listening port.
   port: 25565
-  # Authentication type. Can be offline, online, smart, or floodgate (see https://github.com/GeyserMC/Geyser/wiki/Floodgate).
+  # Authentication type. Can be offline, online, floodgate or smart(see https://github.com/GeyserMC/Geyser/wiki/Floodgate).
   auth-type: online
   # Allow for password-based authentication methods through Geyser. Only useful in online mode.
   # If this is false, users must authenticate to Microsoft using a code provided by Geyser on their desktop.
@@ -70,11 +70,6 @@ floodgate-key-file: public-key.pem
 #    email: not_really_my_email_address_mr_minecrafter53267@gmail.com 
 #    password: "this isn't really my password"
 #    microsoft-account: false
-
-# Allows player can join the server without logged in.
-# For Chinese player, It's hard to connect to Xbox service, It can help them.
-# WARNING: This option may cause some safety problems, so You'd better keep it enabled unless You really need it
-xbox-auth-enabled: true
 
 # Bedrock clients can freeze when opening up the command prompt for the first time if given a lot of commands.
 # Disabling this will prevent command suggestions from being sent and solve freezing for Bedrock clients.
@@ -189,4 +184,4 @@ enable-proxy-connections: false
 # Turning this off for Spigot will stop NMS from being used but will have a performance impact.
 use-adapters: true
 
-config-version: 5
+config-version: 4

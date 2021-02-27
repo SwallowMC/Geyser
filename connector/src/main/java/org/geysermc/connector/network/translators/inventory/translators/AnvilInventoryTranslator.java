@@ -28,14 +28,10 @@ package org.geysermc.connector.network.translators.inventory.translators;
 import com.github.steveice10.mc.protocol.data.game.window.WindowType;
 import com.github.steveice10.mc.protocol.packet.ingame.client.window.ClientRenameItemPacket;
 import com.nukkitx.nbt.NbtMap;
-import com.nukkitx.protocol.bedrock.data.inventory.ContainerSlotType;
-import com.nukkitx.protocol.bedrock.data.inventory.ContainerType;
-import com.nukkitx.protocol.bedrock.data.inventory.ItemData;
-import com.nukkitx.protocol.bedrock.data.inventory.StackRequestSlotInfoData;
+import com.nukkitx.protocol.bedrock.data.inventory.*;
 import com.nukkitx.protocol.bedrock.data.inventory.stackrequestactions.CraftResultsDeprecatedStackRequestActionData;
 import com.nukkitx.protocol.bedrock.data.inventory.stackrequestactions.StackRequestActionData;
 import com.nukkitx.protocol.bedrock.data.inventory.stackrequestactions.StackRequestActionType;
-import com.nukkitx.protocol.bedrock.packet.ItemStackRequestPacket;
 import com.nukkitx.protocol.bedrock.packet.ItemStackResponsePacket;
 import org.geysermc.connector.inventory.AnvilContainer;
 import org.geysermc.connector.inventory.GeyserItemStack;
@@ -61,7 +57,7 @@ public class AnvilInventoryTranslator extends AbstractBlockInventoryTranslator {
 
     @Override
     @Deprecated
-    public ItemStackResponsePacket.Response translateSpecialRequest(GeyserSession session, Inventory inventory, ItemStackRequestPacket.Request request) {
+    public ItemStackResponsePacket.Response translateSpecialRequest(GeyserSession session, Inventory inventory, ItemStackRequest request) {
         if (!(request.getActions()[1] instanceof CraftResultsDeprecatedStackRequestActionData)) {
             // Just silently log an error
             session.getConnector().getLogger().debug("Something isn't quite right with taking an item out of an anvil.");
@@ -103,14 +99,14 @@ public class AnvilInventoryTranslator extends AbstractBlockInventoryTranslator {
 
     @Override
     public int bedrockSlotToJava(StackRequestSlotInfoData slotInfoData) {
-        if (slotInfoData.getContainer() == ContainerSlotType.ANVIL_INPUT) {
-            return 0;
-        }
-        if (slotInfoData.getContainer() == ContainerSlotType.ANVIL_MATERIAL) {
-            return 1;
-        }
-        if (slotInfoData.getContainer() == ContainerSlotType.ANVIL_RESULT || slotInfoData.getContainer() == ContainerSlotType.CREATIVE_OUTPUT) {
-            return 2;
+        switch (slotInfoData.getContainer()) {
+            case ANVIL_INPUT:
+                return 0;
+            case ANVIL_MATERIAL:
+                return 1;
+            case ANVIL_RESULT:
+            case CREATIVE_OUTPUT:
+                return 2;
         }
         return super.bedrockSlotToJava(slotInfoData);
     }

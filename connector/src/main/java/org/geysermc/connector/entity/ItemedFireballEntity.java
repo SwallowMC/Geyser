@@ -72,23 +72,4 @@ public class ItemedFireballEntity extends ThrowableEntity {
     public void tick(GeyserSession session) {
         moveAbsoluteImmediate(session, tickMovement(session, position), rotation, false, false);
     }
-
-    @Override
-    protected void moveAbsoluteImmediate(GeyserSession session, Vector3f position, Vector3f rotation, boolean isOnGround, boolean teleported) {
-        this.position = position;
-        // Advance the position by a few ticks before sending it to Bedrock
-        Vector3f lastMotion = motion;
-        for (int i = 0; i < futureTicks; i++) {
-            tickMovement(session);
-        }
-        super.moveAbsoluteImmediate(session, this.position, rotation, isOnGround, teleported);
-        this.position = position;
-        this.motion = lastMotion;
-    }
-
-    @Override
-    public void tick(GeyserSession session) {
-        tickMovement(session);
-        moveAbsoluteImmediate(session, position, rotation, false, false);
-    }
 }
