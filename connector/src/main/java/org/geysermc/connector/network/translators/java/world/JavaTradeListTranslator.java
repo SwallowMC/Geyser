@@ -31,12 +31,11 @@ import com.github.steveice10.mc.protocol.packet.ingame.server.window.ServerTrade
 import com.nukkitx.nbt.NbtMap;
 import com.nukkitx.nbt.NbtMapBuilder;
 import com.nukkitx.nbt.NbtType;
-import com.nukkitx.protocol.bedrock.data.inventory.ContainerType;
 import com.nukkitx.protocol.bedrock.data.entity.EntityData;
+import com.nukkitx.protocol.bedrock.data.inventory.ContainerType;
 import com.nukkitx.protocol.bedrock.data.inventory.ItemData;
 import com.nukkitx.protocol.bedrock.packet.UpdateTradePacket;
 import org.geysermc.connector.entity.Entity;
-import org.geysermc.connector.entity.type.EntityType;
 import org.geysermc.connector.inventory.Inventory;
 import org.geysermc.connector.inventory.MerchantContainer;
 import org.geysermc.connector.network.session.GeyserSession;
@@ -71,23 +70,15 @@ public class JavaTradeListTranslator extends PacketTranslator<ServerTradeListPac
         updateTradePacket.setTradeTier(packet.getVillagerLevel() - 1);
         updateTradePacket.setContainerId((short) packet.getWindowId());
         updateTradePacket.setContainerType(ContainerType.TRADE);
-        String displayName;
-        //TODO: verify correct window title behavior
-        Entity realVillager = session.getEntityCache().getEntityByGeyserId(session.getLastInteractedVillagerEid());
-        if (realVillager != null && realVillager.getMetadata().containsKey(EntityData.NAMETAG) && realVillager.getMetadata().getString(EntityData.NAMETAG) != null) {
-            displayName = realVillager.getMetadata().getString(EntityData.NAMETAG);
-        } else {
-            displayName = realVillager != null &&
-                    realVillager.getEntityType() == EntityType.WANDERING_TRADER ? "Wandering Trader" : "Villager";
-        }
-        updateTradePacket.setDisplayName(displayName);
+        updateTradePacket.setDisplayName(openInventory.getTitle());
         updateTradePacket.setSize(0);
         updateTradePacket.setNewTradingUi(true);
         updateTradePacket.setUsingEconomyTrade(true);
         updateTradePacket.setPlayerUniqueEntityId(session.getPlayerEntity().getGeyserId());
         updateTradePacket.setTraderUniqueEntityId(villager.getGeyserId());
         NbtMapBuilder builder = NbtMap.builder();
-        List<NbtMap> tags = new ArrayList<>();
+        boolean addExtraTrade = packet.isRegularVillager() && packet.getVillagerLevel() < 5;
+        List<NbtMap> tags = new ArrayList<>(addExtraTrade ? packet.getTrades().length + 1 : packet.getTrades().length);
         for (int i = 0; i < packet.getTrades().length; i++) {
             VillagerTrade trade = packet.getTrades()[i];
             NbtMapBuilder recipe = NbtMap.builder();
@@ -111,7 +102,7 @@ public class JavaTradeListTranslator extends PacketTranslator<ServerTradeListPac
         }
 
         //Hidden trade to fix visual experience bug
-        if (packet.isRegularVillager() && packet.getVillagerLevel() < 5) {
+        if (addExtraTrade) {
             tags.add(NbtMap.builder()
                     .putInt("maxUses", 0)
                     .putInt("traderExp", 0)
@@ -127,7 +118,7 @@ public class JavaTradeListTranslator extends PacketTranslator<ServerTradeListPac
         }
 
         builder.putList("Recipes", NbtType.COMPOUND, tags);
-        List<NbtMap> expTags = new ArrayList<>();
+        List<NbtMap> expTags = new ArrayList<>(5);
         expTags.add(NbtMap.builder().putInt("0", 0).build());
         expTags.add(NbtMap.builder().putInt("1", 10).build());
         expTags.add(NbtMap.builder().putInt("2", 70).build());
