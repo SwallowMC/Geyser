@@ -519,6 +519,7 @@ public class GeyserSession implements CommandSender {
 
     public void login() {
     	if (connector.getAuthType() == AuthType.SMART){
+    		LoginEncryptionUtils.showLoginWindow(this);
             return;
         }
         if (connector.getAuthType() != AuthType.ONLINE) {
